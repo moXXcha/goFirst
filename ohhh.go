@@ -1,54 +1,98 @@
 package main
 
 import (
-	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 
-	_ "github.com/go-sql-driver/mysql"
-    "github.com/jinzhu/gorm"
+	"fmt"
+    "html/template"
+    "net/http"
+	"strconv"
+
 )
 
 func main() {
+	http.HandleFunc("/", login)
 
-	db, err := sqlConnect()
-	if err != nil {
-		panic(err.Error())
+	err := http.ListenAndServe(":8080", nil) 
+    if err != nil {
+        panic(err.Error())
+    }
+}
+
+func  login(w http.ResponseWriter, r *http.Request) {
+
+	Author := ""
+	Post := 0
+	Name := ""
+	Intro := ""
+	Body := ""
+
+	if r.Method == "POST" {
+		r.ParseForm()
+		
+		author := [][]string{r.Form["Author"]}
+		Author = author[0][0]
+		
+		postarray := [][]string{r.Form["post"]}
+		Post, _ = strconv.Atoi(postarray[0][0])
+
+		name := [][]string{r.Form["name"]}
+		Name = name[0][0]
+
+		intro := [][]string{r.Form["intro"]}
+		Intro = intro[0][0]
+
+		body := [][]string{r.Form["body"]}
+		Body = body[0][0]
+
+		fmt.Println(Author,Post,Name,Intro,Body)
+
+
+		db, err := sqlConnect()
+		if err != nil {
+			panic(err.Error())
+		}
+		post := Posts{
+			Author: Author,
+			Post:   Post,
+			Name:   Name,
+			Intro:  Intro,
+			Body:   Body,
+		}
+	
+		db.Create(&post)
+
+		t, err := template.ParseFiles("complete.html")
+
+		if err != nil {
+			panic(err.Error())
+		}else if err := t.Execute(w, nil); err != nil {
+			panic(err.Error())
+		}
 	}else {
-		fmt.Println("DB接続完了")
-	}
-	defer db.Close()
+		t, err := template.ParseFiles("admin.html")
 
-	error := db.Create(&Posts{
-			author:     "chacha",
-			post:      1,
-			name:  "lesson1",
-			intro: "introintro",
-			body: "bodybodt",
-		}).Error
-		if error != nil {
-			fmt.Println(error)
-		} else {
-			fmt.Println("データ追加成功")
+		if err != nil {
+			panic(err.Error())
+		}else if err := t.Execute(w, nil); err != nil {
+			panic(err.Error())
+		}
 	}
 }
 
 
-//データベース接続
 func sqlConnect() (database *gorm.DB, err error) {
-	DBMS := "mysql"
-	USER := "root"
-	PASS := "chacha0503"
-	PROTOCOL := "tcp(localhost:3306)"
-	DBNAME := "goProject"
+	dsn := "root:chacha0503@tcp(127.0.0.1:3306)/goProject?charset=utf8&parseTime=True&loc=Local"
 
-	CONNECT := USER + ":" + PASS + "@" + PROTOCOL + "/" + DBNAME + "?charset=utf8&parseTime=true&loc=Asia%2FTokyo"
-
-	return gorm.Open(DBMS, CONNECT)
+	return gorm.Open(mysql.Open(dsn), &gorm.Config{})
 }
 
 type Posts struct {
-	author string
-	post int
-	name string
-	intro string
-	body string
+	Author string
+	Post   int    
+	Name   string 
+	Intro  string 
+	Body   string 
 }
+
