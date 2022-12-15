@@ -12,7 +12,8 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/", login)
+	http.HandleFunc("/", blog)
+	http.HandleFunc("/admin", login)
 
 	err := http.ListenAndServe(":8080", nil) 
     if err != nil {
@@ -20,7 +21,22 @@ func main() {
     }
 }
 
-func  login(w http.ResponseWriter, r *http.Request) {
+
+
+
+func blog(w http.ResponseWriter, r *http.Request) {
+	t, err := template.ParseFiles("index.html")
+
+	if err != nil {
+		panic(err.Error())
+	}else if err := t.Execute(w, nil); err != nil {
+		panic(err.Error())
+	}
+}
+
+
+
+func login(w http.ResponseWriter, r *http.Request) {
 
 	Author := ""
 	Post := 0
@@ -82,11 +98,21 @@ func  login(w http.ResponseWriter, r *http.Request) {
 }
 
 
+
+
+
+
+
+
 func sqlConnect() (database *gorm.DB, err error) {
 	dsn := "root:chacha0503@tcp(127.0.0.1:3306)/goProject?charset=utf8&parseTime=True&loc=Local"
 
 	return gorm.Open(mysql.Open(dsn), &gorm.Config{})
 }
+
+
+
+
 
 type Posts struct {
 	Author string
@@ -95,4 +121,3 @@ type Posts struct {
 	Intro  string 
 	Body   string 
 }
-
